@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { checkSchema } from 'express-validator'
+import { ErrorWithStatus } from '~/models/Errors'
 import usersService from '~/services/users.services'
 import validate from '~/utils/validate'
 
@@ -25,8 +26,9 @@ export const registerValidator = validate(
         options: async (value) => {
           const emailExists = await usersService.checkEmailExists(value)
           if (emailExists) {
-            throw new Error('Email already in use')
+            throw new ErrorWithStatus({ message: 'Email already in use', status: 400 })
           }
+          return true
         }
       }
     },
@@ -53,6 +55,7 @@ export const registerValidator = validate(
           if (value !== req.body.password) {
             throw new Error('Confirm Password does not match Password')
           }
+          return true
         }
       }
     }
