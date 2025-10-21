@@ -1,17 +1,26 @@
-import { Request, Response, NextFunction } from 'express'
 import { checkSchema } from 'express-validator'
-import { stat } from 'fs'
 import { ErrorWithStatus } from '~/models/Errors'
 import usersService from '~/services/users.services'
 import validate from '~/utils/validate'
 
-const loginValidationMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Username and password are required.' })
-  }
-  next()
-}
+const loginValidationMiddleware = validate(
+  checkSchema({
+    email: {
+      notEmpty: { errorMessage: 'Email is required' },
+      isEmail: { errorMessage: 'Invalid email' },
+      normalizeEmail: true,
+      trim: true
+    },
+    password: {
+      notEmpty: { errorMessage: 'Password is required' },
+      trim: true,
+      isLength: {
+        options: { min: 6, max: 20 },
+        errorMessage: 'Password must be between 6 and 20 characters long'
+      }
+    }
+  })
+)
 
 export const registerValidator = validate(
   checkSchema({
@@ -27,7 +36,7 @@ export const registerValidator = validate(
         options: async (value) => {
           const emailExists = await usersService.checkEmailExists(value)
           if (emailExists) {
-            throw new ErrorWithStatus({message: 'Email is already in use hahhaa', status: 401})
+            throw new ErrorWithStatus({ message: 'Email is already in use hahhaa', status: 401 })
           }
           return true
         }

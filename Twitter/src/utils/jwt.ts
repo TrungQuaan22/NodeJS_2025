@@ -1,6 +1,8 @@
+import { config } from 'dotenv'
 import { PrivateKey, Secret, sign, SignOptions } from 'jsonwebtoken'
-const JWT_SECRET = process.env.JWT
+config()
 
+const JWT_SECRET = process.env.JWT_SECRET
 export const signToken = ({
   payload,
   privateKey = JWT_SECRET,

@@ -1,9 +1,11 @@
 import { User } from '~/models/schemas/users.schema'
 import databasesService from './databases.services'
 import { RegisterReqBody } from '~/models/request/authentication'
-import { hashPassword } from '~/utils/hashPass'
+import { comparePassword, hashPassword } from '~/utils/hashPass'
 import { signToken } from '~/utils/jwt'
 import { TokenType } from '~/constants/enums'
+import { ErrorWithStatus } from '~/models/Errors'
+import { RefreshToken } from '~/models/schemas/refreshToken.schema'
 
 class UsersService {
   private signAccessToken(user_id: string) {
@@ -22,6 +24,25 @@ class UsersService {
     const [access_token, refresh_token] = await Promise.all([
       this.signAccessToken(result.insertedId.toString()),
       this.signRefreshToken(result.insertedId.toString())
+    ])
+    databasesService.refreshTokens.insertOne(new RefreshToken({ token: refresh_token, user_id: result.insertedId }))
+    return { access_token, refresh_token }
+  }
+  async login({ email, password }: { email: string; password: string }) {
+    const user = await databasesService.users.findOne({ email })
+    if (!user) {
+      throw new Error('User not found')
+    }
+    const isMatch = await comparePassword(password, user.password)
+    if (!isMatch) {
+      throw new ErrorWithStatus({
+        message: 'Invalid email or password',
+        status: 401
+      })
+    }
+    const [access_token, refresh_token] = await Promise.all([
+      this.signAccessToken(user._id.toString()),
+      this.signRefreshToken(user._id.toString())
     ])
     return { access_token, refresh_token }
   }
