@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { checkSchema } from 'express-validator'
 import { ErrorWithStatus } from '~/models/Errors'
+import databasesService from '~/services/databases.services'
 import usersService from '~/services/users.services'
+import { verifyToken } from '~/utils/jwt'
 import validate from '~/utils/validate'
 
 const loginValidationMiddleware = validate(
@@ -71,5 +74,65 @@ export const registerValidator = validate(
     }
   })
 )
+export const logoutValidator = validate(
+  checkSchema(
+    {
+      refresh_token: {
+        notEmpty: { errorMessage: 'Refresh token is required' },
+        trim: true
+      }
+    },
+    ['body']
+  )
+)
+export const accessTokenValidator = validate(
+  checkSchema(
+    {
+      Authorization: {
+        notEmpty: { errorMessage: 'Authorization header is required' },
+        custom: {
+          options: async (value, { req }) => {
+            const accessToken = value?.split(' ')[1]
+            if (!accessToken) {
+              throw new ErrorWithStatus({ message: 'Access token is required', status: 401 })
+            }
+            const decode_authorization = await verifyToken({ token: accessToken })
+            req.decode_authorization = decode_authorization
+            return true
+          }
+        }
+      }
+    },
+    ['headers']
+  )
+)
+export const refreshTokenValidator = validate(
+  checkSchema(
+    {
+      refresh_token: {
+        notEmpty: { errorMessage: 'Refresh token is required' },
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            const [decode_refresh, refresh_token] = await Promise.all([
+              verifyToken({ token: value }).catch((err) => null),
+              databasesService.refreshTokens.findOne({ token: value })
+            ])
 
+            if (!decode_refresh) {
+              throw new ErrorWithStatus({ message: 'Invalid refresh token', status: 401 })
+            }
+
+            if (refresh_token === null) {
+              throw new ErrorWithStatus({ message: 'Refresh token not found', status: 401 })
+            }
+
+            return true
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)
 export { loginValidationMiddleware }

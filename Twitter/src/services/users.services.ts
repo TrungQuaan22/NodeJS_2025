@@ -44,8 +44,14 @@ class UsersService {
       this.signAccessToken(user._id.toString()),
       this.signRefreshToken(user._id.toString())
     ])
+    databasesService.refreshTokens.insertOne(new RefreshToken({ token: refresh_token, user_id: user._id }))
     return { access_token, refresh_token }
   }
+  async logout(refreshToken: string) {
+    const result = await databasesService.refreshTokens.deleteOne({ token: refreshToken })
+    return result
+  }
+
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })
     return Boolean(result)

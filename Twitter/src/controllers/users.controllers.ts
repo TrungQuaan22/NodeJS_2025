@@ -10,4 +10,10 @@ export const registerController = async (req: Request, res: Response) => {
   return res.json({ message: 'Register successful!', result })
 }
 
+export const logoutController = async (req: Request, res: Response) => {
+  // Invalidate the refresh token
+  const refreshToken = req.body.refresh_token
+  const result = await usersService.logout(refreshToken)
+  return res.json({ message: 'Logout successful!', result })
+}
 export { loginController }
