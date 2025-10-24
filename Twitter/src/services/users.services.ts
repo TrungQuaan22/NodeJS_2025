@@ -6,6 +6,7 @@ import { signToken } from '~/utils/jwt'
 import { TokenType } from '~/constants/enums'
 import { ErrorWithStatus } from '~/models/Errors'
 import { RefreshToken } from '~/models/schemas/refreshToken.schema'
+import { ObjectId } from 'mongodb'
 
 class UsersService {
   private signAccessToken(user_id: string) {
@@ -51,7 +52,20 @@ class UsersService {
     const result = await databasesService.refreshTokens.deleteOne({ token: refreshToken })
     return result
   }
+  async refreshToken(oldRefreshToken: string, user_id: string) {
+    const [access_token, new_refresh_token] = await Promise.all([
+      this.signAccessToken(user_id),
+      this.signRefreshToken(user_id)
+    ])
+    // Delete old refresh token and insert new refresh token
+    await databasesService.refreshTokens.deleteOne({ token: oldRefreshToken })
 
+    // Insert new refresh token
+    await databasesService.refreshTokens.insertOne(
+      new RefreshToken({ token: new_refresh_token, user_id: new ObjectId(user_id) })
+    )
+    return { access_token, refresh_token: new_refresh_token }
+  }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })
     return Boolean(result)

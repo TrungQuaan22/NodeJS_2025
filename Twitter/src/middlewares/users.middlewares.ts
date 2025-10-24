@@ -5,6 +5,8 @@ import databasesService from '~/services/databases.services'
 import usersService from '~/services/users.services'
 import { verifyToken } from '~/utils/jwt'
 import validate from '~/utils/validate'
+import { Request } from 'express'
+import { TokenPayload } from '~/models/request/authentication'
 
 const loginValidationMiddleware = validate(
   checkSchema({
@@ -85,6 +87,8 @@ export const logoutValidator = validate(
     ['body']
   )
 )
+// Middleware to validate access token in Authorization header
+// Require access token exists and valid
 export const accessTokenValidator = validate(
   checkSchema(
     {
@@ -106,6 +110,8 @@ export const accessTokenValidator = validate(
     ['headers']
   )
 )
+
+//Require refresh token exists in database and valid in body
 export const refreshTokenValidator = validate(
   checkSchema(
     {
@@ -125,8 +131,8 @@ export const refreshTokenValidator = validate(
 
             if (refresh_token === null) {
               throw new ErrorWithStatus({ message: 'Refresh token not found', status: 401 })
-            }
-
+            };
+            (req as Request).refresh_token_payload = decode_refresh as TokenPayload
             return true
           }
         }

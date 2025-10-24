@@ -1,5 +1,6 @@
 import { config } from 'dotenv'
-import { JwtPayload, PrivateKey, PublicKey, Secret, sign, SignOptions, verify } from 'jsonwebtoken'
+import { PrivateKey, PublicKey, Secret, sign, SignOptions, verify } from 'jsonwebtoken'
+import { TokenPayload } from '~/models/request/authentication'
 config()
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -8,7 +9,7 @@ export const signToken = ({
   privateKey = JWT_SECRET,
   options
 }: {
-  payload: object
+  payload: TokenPayload
   privateKey?: PrivateKey
   options?: SignOptions
 }): Promise<string> => {
@@ -20,17 +21,11 @@ export const signToken = ({
   })
 }
 
-export const verifyToken = ({
-  token,
-  privateKey = JWT_SECRET,
-}: {
-  token: string
-  privateKey?: PrivateKey
-}) => {
-  return new Promise<JwtPayload>((resolve, reject) => {
+export const verifyToken = ({ token, privateKey = JWT_SECRET }: { token: string; privateKey?: PrivateKey }) => {
+  return new Promise<TokenPayload>((resolve, reject) => {
     verify(token, privateKey as Secret | PublicKey, (err, decoded) => {
-      if (err)  reject(err)
-      resolve(decoded as JwtPayload)
+      if (err) reject(err)
+      resolve(decoded as TokenPayload)
     })
   })
 }
