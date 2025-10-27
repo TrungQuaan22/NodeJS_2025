@@ -7,6 +7,8 @@ import { verifyToken } from '~/utils/jwt'
 import validate from '~/utils/validate'
 import { Request } from 'express'
 import { TokenPayload } from '~/models/request/authentication'
+import { config } from 'dotenv'
+config()
 
 const loginValidationMiddleware = validate(
   checkSchema({
@@ -100,7 +102,10 @@ export const accessTokenValidator = validate(
             if (!accessToken) {
               throw new ErrorWithStatus({ message: 'Access token is required', status: 401 })
             }
-            const decode_authorization = await verifyToken({ token: accessToken })
+            const decode_authorization = await verifyToken({
+              token: accessToken,
+              privateKey: process.env.JWT_ACCESS_TOKEN_SECRET as string
+            }).catch((err) => null)
             req.decode_authorization = decode_authorization
             return true
           }
@@ -121,7 +126,9 @@ export const refreshTokenValidator = validate(
         custom: {
           options: async (value, { req }) => {
             const [decode_refresh, refresh_token] = await Promise.all([
-              verifyToken({ token: value }).catch((err) => null),
+              verifyToken({ token: value, privateKey: process.env.JWT_REFRESH_TOKEN_SECRET as string }).catch(
+                (err) => null
+              ),
               databasesService.refreshTokens.findOne({ token: value })
             ])
 
@@ -131,8 +138,8 @@ export const refreshTokenValidator = validate(
 
             if (refresh_token === null) {
               throw new ErrorWithStatus({ message: 'Refresh token not found', status: 401 })
-            };
-            (req as Request).refresh_token_payload = decode_refresh as TokenPayload
+            }
+            ;(req as Request).refresh_token_payload = decode_refresh as TokenPayload
             return true
           }
         }
@@ -141,4 +148,27 @@ export const refreshTokenValidator = validate(
     ['body']
   )
 )
+//Check verify token in body, decoded token will be stored in req.verify_token_payload
+export const verifyTokenValidator = validate(
+  checkSchema({
+    verify_token: {
+      notEmpty: { errorMessage: 'Verify token is required' },
+      trim: true,
+      custom: {
+        options: async (value, { req }) => {
+          const decode_verify_token = await verifyToken({
+            token: value,
+            privateKey: process.env.JWT_VERIFY_EMAIL_TOKEN_SECRET as string
+          })
+          if (!decode_verify_token) {
+            throw new ErrorWithStatus({ message: 'Invalid verify token', status: 401 })
+          }
+          req.verify_token_payload = decode_verify_token
+          return true
+        }
+      }
+    }
+  })
+)
+
 export { loginValidationMiddleware }

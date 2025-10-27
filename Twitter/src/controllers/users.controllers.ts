@@ -23,5 +23,10 @@ export const refreshTokenController = async (req: Request, res: Response) => {
   const result = await usersService.refreshToken(oldRefreshToken, user_id)
   return res.json({ message: 'Token refreshed successfully!', result })
 }
-
+export const verifyEmailController = async (req: Request, res: Response) => {
+  //Token verify ở middleware đã decode và lưu vào req.verify_token_payload
+  const user_id = req.verify_token_payload?.user_id as string
+  const result = await usersService.verifyEmail( user_id)
+  return res.json({ message: 'Email verified successfully!', result })
+}
 export { loginController }

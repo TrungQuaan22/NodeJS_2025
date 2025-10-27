@@ -5,5 +5,6 @@ declare module 'express' {
     userId?: string // Thêm thuộc tính userId kiểu string, có thể undefined
     decode_authorization?: TokenPayload
     refresh_token_payload?: TokenPayload
+    verify_token_payload?: TokenPayload
   }
 }

@@ -7,28 +7,56 @@ import { TokenType } from '~/constants/enums'
 import { ErrorWithStatus } from '~/models/Errors'
 import { RefreshToken } from '~/models/schemas/refreshToken.schema'
 import { ObjectId } from 'mongodb'
+import { config } from 'dotenv'
+config()
 
 class UsersService {
   private signAccessToken(user_id: string) {
     // Logic to sign access token
-    return signToken({ payload: { user_id, token_type: TokenType.ACCESS_TOKEN }, options: { expiresIn: '15m' } })
+    return signToken({
+      payload: { user_id, token_type: TokenType.ACCESS_TOKEN },
+      privateKey: process.env.JWT_ACCESS_TOKEN_SECRET as string,
+      options: { expiresIn: '15m' }
+    })
   }
   private signRefreshToken(user_id: string) {
     // Logic to sign refresh token
-    return signToken({ payload: { user_id, token_type: TokenType.REFRESH_TOKEN }, options: { expiresIn: '7d' } })
+    return signToken({
+      payload: { user_id, token_type: TokenType.REFRESH_TOKEN },
+      privateKey: process.env.JWT_REFRESH_TOKEN_SECRET as string,
+      options: { expiresIn: '7d' }
+    })
+  }
+  private async signEmailVerifyToken(user_id: string) {
+    return signToken({
+      payload: { user_id, token_type: TokenType.VERIFY_EMAIL_TOKEN },
+      privateKey: process.env.JWT_VERIFY_EMAIL_TOKEN_SECRET as string,
+      options: { expiresIn: '1d' }
+    })
+  }
+  private signAccessAndRefreshToken(user_id: string) {
+    return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
   }
   async register(payload: RegisterReqBody) {
+    const user_id = new ObjectId()
+    const email_verify_token = await this.signEmailVerifyToken(user_id.toString())
     const hashPass = await hashPassword(payload.password)
-    const result = await databasesService.users.insertOne(
-      new User({ ...payload, password: hashPass, date_of_birth: new Date(payload.date_of_birth) })
+    await databasesService.users.insertOne(
+      new User({
+        ...payload,
+        _id: user_id,
+        password: hashPass,
+        date_of_birth: new Date(payload.date_of_birth),
+        email_verify_token
+      })
     )
-    const [access_token, refresh_token] = await Promise.all([
-      this.signAccessToken(result.insertedId.toString()),
-      this.signRefreshToken(result.insertedId.toString())
-    ])
-    databasesService.refreshTokens.insertOne(new RefreshToken({ token: refresh_token, user_id: result.insertedId }))
+    console.log('verify-token: ', email_verify_token)
+
+    const [access_token, refresh_token] = await this.signAccessAndRefreshToken(user_id.toString())
+    databasesService.refreshTokens.insertOne(new RefreshToken({ token: refresh_token, user_id }))
     return { access_token, refresh_token }
   }
+
   async login({ email, password }: { email: string; password: string }) {
     const user = await databasesService.users.findOne({ email })
     if (!user) {
@@ -41,10 +69,7 @@ class UsersService {
         status: 401
       })
     }
-    const [access_token, refresh_token] = await Promise.all([
-      this.signAccessToken(user._id.toString()),
-      this.signRefreshToken(user._id.toString())
-    ])
+    const [access_token, refresh_token] = await this.signAccessAndRefreshToken(user._id.toString())
     databasesService.refreshTokens.insertOne(new RefreshToken({ token: refresh_token, user_id: user._id }))
     return { access_token, refresh_token }
   }
@@ -52,11 +77,14 @@ class UsersService {
     const result = await databasesService.refreshTokens.deleteOne({ token: refreshToken })
     return result
   }
+
+  /*
+   * Truyền vào refresh token cũ và user_id lấy trong req (truyền vào để tránh việc tìm user trong db lại)
+   * Xóa refresh token cũ trong database
+   * Tạo access token mới và refresh token mới
+   */
   async refreshToken(oldRefreshToken: string, user_id: string) {
-    const [access_token, new_refresh_token] = await Promise.all([
-      this.signAccessToken(user_id),
-      this.signRefreshToken(user_id)
-    ])
+    const [access_token, new_refresh_token] = await this.signAccessAndRefreshToken(user_id)
     // Delete old refresh token and insert new refresh token
     await databasesService.refreshTokens.deleteOne({ token: oldRefreshToken })
 
@@ -65,6 +93,32 @@ class UsersService {
       new RefreshToken({ token: new_refresh_token, user_id: new ObjectId(user_id) })
     )
     return { access_token, refresh_token: new_refresh_token }
+  }
+  /*
+   * Verify email by token and user_id
+   *
+   */
+  async verifyEmail(user_id: string) {
+    const user = await databasesService.users.findOne({ _id: new ObjectId(user_id) })
+    if (!user) {
+      throw new ErrorWithStatus({ message: 'User not found', status: 404 })
+    }
+    if (user.email_verify_token === '') {
+      throw new ErrorWithStatus({ message: 'Email already verified', status: 400 })
+    }
+    await databasesService.users.updateOne(
+      { _id: new ObjectId(user_id) },
+      { $set: { email_verify_token: '', verify: 1, updated_at: new Date() } }
+    )
+    // Xóa refresh token cũ của user (nếu có)
+    await databasesService.refreshTokens.deleteMany({ user_id: new ObjectId(user_id) })
+    // Tạo access token và refresh token mới
+    const [access_token, refresh_token] = await this.signAccessAndRefreshToken(user_id)
+    // Lưu refresh token mới vào database
+    await databasesService.refreshTokens.insertOne(
+      new RefreshToken({ token: refresh_token, user_id: new ObjectId(user_id) })
+    )
+    return { access_token, refresh_token }
   }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })

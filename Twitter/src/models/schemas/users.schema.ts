@@ -6,7 +6,7 @@ enum UserVerifyStatus {
   Banned // bị khóa
 }
 interface UserType {
-  _id?: ObjectId
+  _id: ObjectId
   name?: string
   email: string
   date_of_birth?: Date
@@ -26,7 +26,7 @@ interface UserType {
 }
 
 export class User {
-   _id?: ObjectId
+   _id: ObjectId
   name: string
   email: string
   date_of_birth: Date
