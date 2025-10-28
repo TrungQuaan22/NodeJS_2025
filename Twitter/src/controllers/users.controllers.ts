@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { TokenPayload } from '~/models/request/authentication'
 import usersService from '~/services/users.services'
 const loginController = async (req: Request, res: Response) => {
   const result = await usersService.login(req.body)
@@ -26,7 +27,12 @@ export const refreshTokenController = async (req: Request, res: Response) => {
 export const verifyEmailController = async (req: Request, res: Response) => {
   //Token verify ở middleware đã decode và lưu vào req.verify_token_payload
   const user_id = req.verify_token_payload?.user_id as string
-  const result = await usersService.verifyEmail( user_id)
+  const result = await usersService.verifyEmail(user_id)
   return res.json({ message: 'Email verified successfully!', result })
+}
+export const resendverifyEmailController = async (req: Request, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const result = await usersService.resendverifyEmail(user_id)
+  return res.json(result)
 }
 export { loginController }

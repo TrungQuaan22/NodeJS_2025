@@ -108,7 +108,7 @@ class UsersService {
     }
     await databasesService.users.updateOne(
       { _id: new ObjectId(user_id) },
-      { $set: { email_verify_token: '', verify: 1, updated_at: new Date() } }
+      { $set: { email_verify_token: '', verify: 1 }, $currentDate: { updated_at: true } }
     )
     // Xóa refresh token cũ của user (nếu có)
     await databasesService.refreshTokens.deleteMany({ user_id: new ObjectId(user_id) })
@@ -119,6 +119,29 @@ class UsersService {
       new RefreshToken({ token: refresh_token, user_id: new ObjectId(user_id) })
     )
     return { access_token, refresh_token }
+  }
+
+  async resendverifyEmail(user_id: string) {
+    const user = await databasesService.users.findOne({ _id: new ObjectId(user_id) })
+    if (!user) {
+      throw new ErrorWithStatus({ message: 'User not found', status: 404 })
+    }
+    if (user.verify === 1) {
+      throw new ErrorWithStatus({ message: 'Email already verified', status: 400 })
+    }
+    // Giả bộ tạo lại token verify email và gửi email
+    const email_verify_token = await this.signEmailVerifyToken(user_id)
+    console.log('Resend verify-token: ', email_verify_token)
+    await databasesService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      },
+      {
+        $set: { email_verify_token },
+        $currentDate: { updated_at: true }
+      }
+    )
+    return { message: 'Verification email resent successfully' }
   }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })
