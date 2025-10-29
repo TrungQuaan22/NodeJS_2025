@@ -35,4 +35,9 @@ export const resendverifyEmailController = async (req: Request, res: Response) =
   const result = await usersService.resendverifyEmail(user_id)
   return res.json(result)
 }
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  const user_id = req.user_id as string
+  const result = await usersService.forgotPassword(user_id)
+  return res.json({ result })
+}
 export { loginController }

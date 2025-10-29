@@ -37,6 +37,13 @@ class UsersService {
   private signAccessAndRefreshToken(user_id: string) {
     return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
   }
+  private async signForgotPasswordToken(user_id: string) {
+    return signToken({
+      payload: { user_id, token_type: TokenType.FORGOT_PASSWORD_TOKEN },
+      privateKey: process.env.JWT_FORGOT_PASSWORD_TOKEN_SECRET as string,
+      options: { expiresIn: '1h' }
+    })
+  }
   async register(payload: RegisterReqBody) {
     const user_id = new ObjectId()
     const email_verify_token = await this.signEmailVerifyToken(user_id.toString())
@@ -142,6 +149,19 @@ class UsersService {
       }
     )
     return { message: 'Verification email resent successfully' }
+  } 
+  
+  async forgotPassword(user_id: string) {
+    // Logic for forgot password
+    const forgot_password_token = await this.signForgotPasswordToken(user_id)
+    console.log('Forgot password token: ', forgot_password_token)
+    // Here, you would typically send the token via email to the user
+    await databasesService.users.updateOne(
+      { _id: new ObjectId(user_id) },
+      { $set: { forgot_password_token }, $currentDate: { updated_at: true } }
+    )
+    return { message: 'Forgot password email sent successfully' }
+
   }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })

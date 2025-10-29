@@ -171,4 +171,24 @@ export const verifyTokenValidator = validate(
   })
 )
 
+export const forgotPasswordVaildator = validate(
+  checkSchema({
+    email: {
+      notEmpty: { errorMessage: 'Email is required' },
+      isEmail: { errorMessage: 'Invalid email' },
+      normalizeEmail: true,
+      trim: true,
+      custom: {
+        options: async (value, { req }) => {
+          const user = await databasesService.users.findOne({ email: value })
+          if (!user) {
+            throw new ErrorWithStatus({ message: 'Email not found', status: 404 })
+          }
+          ;(req as Request).user_id = user._id.toString()
+          return true
+        }
+      }
+    }
+  })
+)
 export { loginValidationMiddleware }
