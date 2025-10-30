@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { checkSchema } from 'express-validator'
+import { checkSchema, ParamSchema } from 'express-validator'
 import { ErrorWithStatus } from '~/models/Errors'
 import databasesService from '~/services/databases.services'
 import usersService from '~/services/users.services'
@@ -8,8 +8,66 @@ import validate from '~/utils/validate'
 import { Request } from 'express'
 import { TokenPayload } from '~/models/request/authentication'
 import { config } from 'dotenv'
+import { JsonWebTokenError } from 'jsonwebtoken'
+import { ObjectId } from 'mongodb'
 config()
 
+const passwordSchema: ParamSchema = {
+  notEmpty: { errorMessage: 'Password is required' },
+  trim: true,
+  isStrongPassword: {
+    options: {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1
+    },
+    errorMessage:
+      'Password must be 6-20 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character'
+  }
+}
+const confirmPasswordSchema: ParamSchema = {
+  notEmpty: { errorMessage: 'Confirm Password is required' },
+  trim: true,
+  custom: {
+    options: (value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Confirm Password does not match Password')
+      }
+      return true
+    }
+  }
+}
+const forgotPasswordTokenSchema: ParamSchema = {
+  trim: true,
+  custom: {
+    options: async (value, { req }) => {
+      if (!value) {
+        throw new ErrorWithStatus({ message: 'Forgot password token is required', status: 401 })
+      }
+      try {
+        const decode_forgot_password_token = await verifyToken({
+          token: value,
+          privateKey: process.env.JWT_FORGOT_PASSWORD_TOKEN_SECRET as string
+        })
+        const { user_id } = decode_forgot_password_token
+        console.log('user_id in validator', user_id)
+
+        const user = await databasesService.users.findOne({ _id: new ObjectId(user_id) })
+        if (!user || user.forgot_password_token !== value) {
+          throw new ErrorWithStatus({ message: 'Invalid forgot password token', status: 401 })
+        }
+        req.user_id = user_id
+      } catch (err) {
+        if (err instanceof JsonWebTokenError) {
+          throw new ErrorWithStatus({ message: 'Invalid forgot password token', status: 401 })
+        }
+        return true
+      }
+    }
+  }
+}
 const loginValidationMiddleware = validate(
   checkSchema({
     email: {
@@ -18,14 +76,7 @@ const loginValidationMiddleware = validate(
       normalizeEmail: true,
       trim: true
     },
-    password: {
-      notEmpty: { errorMessage: 'Password is required' },
-      trim: true,
-      isLength: {
-        options: { min: 6, max: 20 },
-        errorMessage: 'Password must be between 6 and 20 characters long'
-      }
-    }
+    password: passwordSchema
   })
 )
 
@@ -49,33 +100,8 @@ export const registerValidator = validate(
         }
       }
     },
-    password: {
-      notEmpty: { errorMessage: 'Password is required' },
-      trim: true,
-      isStrongPassword: {
-        options: {
-          minLength: 6,
-          minLowercase: 1,
-          minUppercase: 1,
-          minNumbers: 1,
-          minSymbols: 1
-        },
-        errorMessage:
-          'Password must be 6-20 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character'
-      }
-    },
-    confirm_password: {
-      notEmpty: { errorMessage: 'Confirm Password is required' },
-      trim: true,
-      custom: {
-        options: (value, { req }) => {
-          if (value !== req.body.password) {
-            throw new Error('Confirm Password does not match Password')
-          }
-          return true
-        }
-      }
-    }
+    password: passwordSchema,
+    confirm_password: confirmPasswordSchema
   })
 )
 export const logoutValidator = validate(
@@ -189,6 +215,18 @@ export const forgotPasswordVaildator = validate(
         }
       }
     }
+  })
+)
+export const verifyForgotPasswordTokenValidator = validate(
+  checkSchema({
+    forgot_password_token: forgotPasswordTokenSchema
+  })
+)
+export const resetPasswordValidator = validate(
+  checkSchema({
+    forgot_password_token: forgotPasswordTokenSchema,
+    password: passwordSchema,
+    confirm_password: confirmPasswordSchema
   })
 )
 export { loginValidationMiddleware }

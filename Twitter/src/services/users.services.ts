@@ -149,8 +149,8 @@ class UsersService {
       }
     )
     return { message: 'Verification email resent successfully' }
-  } 
-  
+  }
+
   async forgotPassword(user_id: string) {
     // Logic for forgot password
     const forgot_password_token = await this.signForgotPasswordToken(user_id)
@@ -161,11 +161,31 @@ class UsersService {
       { $set: { forgot_password_token }, $currentDate: { updated_at: true } }
     )
     return { message: 'Forgot password email sent successfully' }
-
   }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })
     return Boolean(result)
+  }
+  async resetPassword(user_id: string, new_password: string) {
+    const hashPass = await hashPassword(new_password)
+    console.log(user_id)
+    await databasesService.users.updateOne(
+      { _id: new ObjectId(user_id) },
+      { $set: { password: hashPass, forgot_password_token: '' }, $currentDate: { updated_at: true } }
+    )
+    return { message: 'Password reset successfully' }
+  }
+  async getUserById(user_id: string) {
+    const user = await databasesService.users.findOne(
+      { _id: new ObjectId(user_id) },
+      {
+        projection: { password: 0, email_verify_token: 0, forgot_password_token: 0 }
+      }
+    )
+    if (!user) {
+      throw new ErrorWithStatus({ message: 'User not found', status: 404 })
+    }
+    return user
   }
 }
 

@@ -40,4 +40,21 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
   const result = await usersService.forgotPassword(user_id)
   return res.json({ result })
 }
+export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
+  return res.json({ message: 'Verify forgot password token success' })
+}
+export const resetPasswordController = async (req: Request, res: Response) => {
+  const { password } = req.body
+  console.log('password', password)
+  const user_id = req.user_id as string
+  console.log('user_id in controller', user_id)
+
+  const result = await usersService.resetPassword(user_id, password)
+  return res.json({ result })
+}
+export const getMeController = async (req: Request, res: Response) => {
+  const user_id = req.decode_authorization?.user_id as string
+  const user = await usersService.getUserById(user_id)
+  return res.json({ user })
+}
 export { loginController }
