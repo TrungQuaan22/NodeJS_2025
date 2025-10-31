@@ -5,11 +5,12 @@ import databasesService from '~/services/databases.services'
 import usersService from '~/services/users.services'
 import { verifyToken } from '~/utils/jwt'
 import validate from '~/utils/validate'
-import { Request } from 'express'
-import { TokenPayload } from '~/models/request/authentication'
+import { NextFunction, Request, Response } from 'express'
+import { TokenPayload } from '~/models/request/user.req'
 import { config } from 'dotenv'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
+import { UserVerifyStatus } from '~/models/schemas/users.schema'
 config()
 
 const passwordSchema: ParamSchema = {
@@ -227,6 +228,74 @@ export const resetPasswordValidator = validate(
     forgot_password_token: forgotPasswordTokenSchema,
     password: passwordSchema,
     confirm_password: confirmPasswordSchema
+  })
+)
+export const verifiedUserValidator = (req: Request, res: Response, next: NextFunction) => {
+  const { verify } = req.decode_authorization as TokenPayload
+  if (verify !== UserVerifyStatus.Verified) {
+    next(new ErrorWithStatus({ message: 'User email is not verified', status: 403 }))
+  }
+  next()
+}
+
+export const updateMeValidator = validate(
+  checkSchema({
+    name: {
+      optional: true,
+      notEmpty: { errorMessage: 'Name cannot be empty' },
+      trim: true
+    },
+    date_of_birth: {
+      optional: true,
+      isISO8601: { errorMessage: 'Date of birth must be a valid date' },
+      toDate: true
+    },
+    username: {
+      optional: true,
+      notEmpty: { errorMessage: 'Username cannot be empty' },
+      trim: true,
+      custom: {
+        options: async (value, { req }) => {
+          const { user_id } = req.decode_authorization as TokenPayload
+          const existingUser = await databasesService.users.findOne({ username: value })
+          if (existingUser && existingUser._id.toString() !== user_id) {
+            throw new ErrorWithStatus({ message: 'Username is already taken', status: 409 })
+          }
+          return true
+        }
+      }
+    },
+    avatar: {
+      optional: true,
+      isURL: { errorMessage: 'Avatar must be a valid URL' },
+      trim: true
+    },
+    cover_photo: {
+      optional: true,
+      isURL: { errorMessage: 'Cover photo must be a valid URL' },
+      trim: true
+    },
+    bio: {
+      optional: true,
+      isLength: {
+        options: { max: 160 },
+        errorMessage: 'Bio cannot exceed 160 characters'
+      },
+      trim: true
+    },
+    location: {
+      optional: true,
+      isLength: {
+        options: { max: 30 },
+        errorMessage: 'Location cannot exceed 30 characters'
+      },
+      trim: true
+    },
+    website: {
+      optional: true,
+      isURL: { errorMessage: 'Website must be a valid URL' },
+      trim: true
+    }
   })
 )
 export { loginValidationMiddleware }

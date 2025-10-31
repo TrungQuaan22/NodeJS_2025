@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { TokenPayload } from '~/models/request/authentication'
+import { TokenPayload } from '~/models/request/user.req'
 import usersService from '~/services/users.services'
 const loginController = async (req: Request, res: Response) => {
   const result = await usersService.login(req.body)
@@ -20,8 +20,9 @@ export const logoutController = async (req: Request, res: Response) => {
 
 export const refreshTokenController = async (req: Request, res: Response) => {
   const oldRefreshToken = req.body.refresh_token
-  const user_id = req.refresh_token_payload?.user_id as string
-  const result = await usersService.refreshToken(oldRefreshToken, user_id)
+  const user = req.decode_authorization as TokenPayload
+  const user_id = user.user_id
+  const result = await usersService.refreshToken({ oldRefreshToken, user_id, verify: user.verify })
   return res.json({ message: 'Token refreshed successfully!', result })
 }
 export const verifyEmailController = async (req: Request, res: Response) => {
@@ -56,5 +57,11 @@ export const getMeController = async (req: Request, res: Response) => {
   const user_id = req.decode_authorization?.user_id as string
   const user = await usersService.getUserById(user_id)
   return res.json({ user })
+}
+export const updateMeController = async (req: Request, res: Response) => {
+  const user_id = req.decode_authorization?.user_id as string
+  const updateData = req.body
+  const updatedUser = await usersService.updateUserById(user_id, updateData)
+  return res.json({ message: 'User updated successfully', user: updatedUser })
 }
 export { loginController }

@@ -7,10 +7,12 @@ import {
   registerController,
   resendverifyEmailController,
   resetPasswordController,
+  updateMeController,
   verifyEmailController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
 import { loginController } from '~/controllers/users.controllers'
+import { filterBodyMiddleware } from '~/middlewares/common.middleware'
 import {
   accessTokenValidator,
   forgotPasswordVaildator,
@@ -18,9 +20,11 @@ import {
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  verifiedUserValidator,
   verifyForgotPasswordTokenValidator,
   verifyTokenValidator
 } from '~/middlewares/users.middlewares'
+import { UpdateMeReqBody } from '~/models/request/user.req'
 import { wrapAsync } from '~/utils/wrapAsync'
 
 const userRouter = Router()
@@ -38,5 +42,21 @@ userRouter.post(
   wrapAsync(verifyForgotPasswordTokenController)
 )
 userRouter.post('/reset-password', resetPasswordValidator, wrapAsync(resetPasswordController))
-userRouter.get('/me', accessTokenValidator, wrapAsync(getMeController))
+userRouter.get('/me', accessTokenValidator, verifiedUserValidator, wrapAsync(getMeController))
+userRouter.patch(
+  '/me',
+  accessTokenValidator,
+  verifiedUserValidator,
+  filterBodyMiddleware<UpdateMeReqBody>([
+    'avatar',
+    'bio',
+    'cover_photo',
+    'date_of_birth',
+    'location',
+    'name',
+    'username',
+    'website'
+  ]),
+  wrapAsync(updateMeController)
+)
 export default userRouter

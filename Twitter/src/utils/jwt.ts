@@ -1,6 +1,6 @@
 import { config } from 'dotenv'
 import { PrivateKey, PublicKey, Secret, sign, SignOptions, verify } from 'jsonwebtoken'
-import { TokenPayload } from '~/models/request/authentication'
+import { TokenPayload } from '~/models/request/user.req'
 config()
 export const signToken = ({
   payload,

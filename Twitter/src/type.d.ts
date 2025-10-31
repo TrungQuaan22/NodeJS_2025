@@ -1,5 +1,5 @@
 // Dùng để mở rộng kiểu Request của express
-import { TokenPayload } from './models/request/authentication'
+import { TokenPayload } from './models/request/user.req'
 declare module 'express' {
   interface Request {
     user_id?: string // Thêm thuộc tính userId kiểu string, có thể undefined
