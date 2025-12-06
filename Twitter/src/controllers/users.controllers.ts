@@ -53,6 +53,13 @@ export const resetPasswordController = async (req: Request, res: Response) => {
   const result = await usersService.resetPassword(user_id, password)
   return res.json({ result })
 }
+
+export const changePasswordController = async (req: Request, res: Response) => {
+  const user_id = req.decode_authorization?.user_id as string
+  const { old_password, password } = req.body
+  const result = await usersService.changePassword(user_id, old_password, password)
+  return res.json({ message: 'Password changed successfully', result })
+}
 export const getMeController = async (req: Request, res: Response) => {
   const user_id = req.decode_authorization?.user_id as string
   const user = await usersService.getUserById(user_id)
@@ -63,5 +70,25 @@ export const updateMeController = async (req: Request, res: Response) => {
   const updateData = req.body
   const updatedUser = await usersService.updateUserById(user_id, updateData)
   return res.json({ message: 'User updated successfully', user: updatedUser })
+}
+
+export const getProfileController = async (req: Request, res: Response) => {
+  const { username } = req.params
+  const user = await usersService.getProfileByUsername(username)
+  return res.json({ message: 'Profile fetched successfully', result: user })
+}
+
+export const followController = async (req: Request, res: Response) => {
+  const user_id = req.decode_authorization?.user_id as string
+  const { followed_user_id } = req.body
+  const updatedUser = await usersService.follow(user_id, followed_user_id)
+  return res.json({ message: 'User updated successfully', user: updatedUser })
+}
+
+export const unfollowController = async (req: Request, res: Response) => {
+  const { followed_user_id } = req.params
+  const user_id = req.decode_authorization?.user_id as string
+  const result = await usersService.unfollow(user_id, followed_user_id)
+  return res.json({ message: 'Unfollow successful', result })
 }
 export { loginController }

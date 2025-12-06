@@ -230,6 +230,16 @@ export const resetPasswordValidator = validate(
     confirm_password: confirmPasswordSchema
   })
 )
+export const changePasswordValidator = validate(
+  checkSchema({
+    old_password: {
+      notEmpty: { errorMessage: 'Old password is required' },
+      trim: true
+    },
+    password: passwordSchema,
+    confirm_password: confirmPasswordSchema
+  })
+)
 export const verifiedUserValidator = (req: Request, res: Response, next: NextFunction) => {
   const { verify } = req.decode_authorization as TokenPayload
   if (verify !== UserVerifyStatus.Verified) {
@@ -257,6 +267,15 @@ export const updateMeValidator = validate(
       custom: {
         options: async (value, { req }) => {
           const { user_id } = req.decode_authorization as TokenPayload
+          //Check regex username: only allow letters, numbers, underscores, dots, 4-15 characters, not only numbers
+          const usernameRegex = /^(?![0-9]+$)(?!.*[_.]{2})[a-zA-Z0-9._]{4,15}$/
+          if (!usernameRegex.test(value)) {
+            throw new ErrorWithStatus({
+              message:
+                'Username must be 4-15 characters long, can contain letters, numbers, underscores, dots, and cannot be only numbers',
+              status: 400
+            })
+          }
           const existingUser = await databasesService.users.findOne({ username: value })
           if (existingUser && existingUser._id.toString() !== user_id) {
             throw new ErrorWithStatus({ message: 'Username is already taken', status: 409 })
@@ -295,6 +314,33 @@ export const updateMeValidator = validate(
       optional: true,
       isURL: { errorMessage: 'Website must be a valid URL' },
       trim: true
+    }
+  })
+)
+export const followValidator = validate(
+  checkSchema({
+    followed_user_id: {
+      notEmpty: { errorMessage: 'Followed user ID is required' },
+      trim: true,
+      custom: {
+        options: async (value: string, { req }) => {
+          const followedUser = await usersService.getUserById(value)
+          if (!followedUser) {
+            throw new ErrorWithStatus({ message: 'Followed user not found', status: 404 })
+          }
+          if (followedUser.verify !== UserVerifyStatus.Verified) {
+            throw new ErrorWithStatus({ message: 'Cannot follow unverified user', status: 403 })
+          }
+          const isExistingFollow = await databasesService.followers.findOne({
+            user_id: new ObjectId((req.decode_authorization as TokenPayload).user_id),
+            followerId: new ObjectId(value)
+          })
+          if (isExistingFollow) {
+            throw new ErrorWithStatus({ message: 'You are already following this user', status: 409 })
+          }
+          return true
+        }
+      }
     }
   })
 )

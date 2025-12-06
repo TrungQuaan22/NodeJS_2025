@@ -1,12 +1,16 @@
 import { Router } from 'express'
 import {
+  changePasswordController,
+  followController,
   forgotPasswordController,
   getMeController,
+  getProfileController,
   logoutController,
   refreshTokenController,
   registerController,
   resendverifyEmailController,
   resetPasswordController,
+  unfollowController,
   updateMeController,
   verifyEmailController,
   verifyForgotPasswordTokenController
@@ -15,6 +19,8 @@ import { loginController } from '~/controllers/users.controllers'
 import { filterBodyMiddleware } from '~/middlewares/common.middleware'
 import {
   accessTokenValidator,
+  changePasswordValidator,
+  followValidator,
   forgotPasswordVaildator,
   loginValidationMiddleware,
   refreshTokenValidator,
@@ -42,6 +48,7 @@ userRouter.post(
   wrapAsync(verifyForgotPasswordTokenController)
 )
 userRouter.post('/reset-password', resetPasswordValidator, wrapAsync(resetPasswordController))
+userRouter.put('/change-password', accessTokenValidator, changePasswordValidator, wrapAsync(changePasswordController))
 userRouter.get('/me', accessTokenValidator, verifiedUserValidator, wrapAsync(getMeController))
 userRouter.patch(
   '/me',
@@ -59,4 +66,23 @@ userRouter.patch(
   ]),
   wrapAsync(updateMeController)
 )
+
+userRouter.get('/profile/:username', wrapAsync(getProfileController))
+
+//Tính năng Following
+/**
+ * Follow a user
+ * Method: POST
+ * URL: /users/follow
+ * Body: { followed_user_id: string }
+ * Headers: { Authorization: 'Bearer <access_token>' }
+ */
+userRouter.post('/follow', accessTokenValidator, verifiedUserValidator, followValidator, wrapAsync(followController))
+userRouter.delete(
+  '/follow/:followed_user_id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  wrapAsync(unfollowController)
+)
+
 export default userRouter

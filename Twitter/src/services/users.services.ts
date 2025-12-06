@@ -8,6 +8,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { RefreshToken } from '~/models/schemas/refreshToken.schema'
 import { ObjectId } from 'mongodb'
 import { config } from 'dotenv'
+import { Follower } from '~/models/schemas/followers.schema'
 config()
 
 class UsersService {
@@ -189,6 +190,25 @@ class UsersService {
     )
     return { message: 'Forgot password email sent successfully' }
   }
+  async changePassword(user_id: string, old_password: string, new_password: string) {
+    const user = await databasesService.users.findOne({ _id: new ObjectId(user_id) })
+    if (!user) {
+      throw new ErrorWithStatus({ message: 'User not found', status: 404 })
+    }
+    const isMatch = await comparePassword(old_password, user.password)
+    if (!isMatch) {
+      throw new ErrorWithStatus({
+        message: 'Old password is incorrect',
+        status: 401
+      })
+    }
+    const hashPass = await hashPassword(new_password)
+    await databasesService.users.updateOne(
+      { _id: new ObjectId(user_id) },
+      { $set: { password: hashPass }, $currentDate: { updated_at: true } }
+    )
+    return { message: 'Password changed successfully' }
+  }
   async checkEmailExists(email: string) {
     const result = await databasesService.users.findOne({ email })
     return Boolean(result)
@@ -224,6 +244,48 @@ class UsersService {
       { $set: updateFields, $currentDate: { updated_at: true } },
       { returnDocument: 'after', projection: { password: 0, email_verify_token: 0, forgot_password_token: 0 } }
     )
+    return result
+  }
+
+  //get Profile
+  async getProfileByUsername(username: string) {
+    const user = await databasesService.users.findOne(
+      { username },
+      {
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0,
+          verify: 0,
+          email: 0,
+          created_at: 0,
+          updated_at: 0
+        }
+      }
+    )
+    if (!user) {
+      throw new ErrorWithStatus({ message: 'User not found', status: 404 })
+    }
+    return user
+  }
+  // Tính năng Follow user
+  async follow(user_id: string, followed_user_id: string) {
+    databasesService.followers.insertOne(
+      new Follower({
+        user_id: new ObjectId(followed_user_id),
+        followerId: new ObjectId(user_id)
+      })
+    )
+    return await this.getUserById(user_id)
+  }
+  async unfollow(user_id: string, followed_user_id: string) {
+    const result = await databasesService.followers.deleteOne({
+      user_id: new ObjectId(followed_user_id),
+      followerId: new ObjectId(user_id)
+    })
+    if (result.deletedCount === 0) {
+      throw new ErrorWithStatus({ message: 'You are not following this user', status: 400 })
+    }
     return result
   }
 }

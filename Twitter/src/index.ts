@@ -2,6 +2,7 @@ import express from 'express'
 import userRouter from './routes/users.routes'
 import databasesService from './services/databases.services'
 import defaultErrorHandler from './middlewares/errors.middleware'
+import mediasRouter from './routes/medias.routes'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -14,6 +15,7 @@ app.use(express.urlencoded({ extended: true }))
 // Sử dụng userRouter cho các route bắt đầu bằng /users
 
 app.use('/users', userRouter)
+app.use('/medias', mediasRouter)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(defaultErrorHandler)
 app.listen(PORT, () => {
