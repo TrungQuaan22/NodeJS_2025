@@ -1,25 +1,30 @@
 import formidable from 'formidable'
-import path from 'path'
 import { Request } from 'express'
+import fs from 'fs'
+import { UPLOAD_IMAGE_TEMP_DIR } from '~/constants/dir'
 
-export const handleUploadSingleImage = async (req: Request) => {
+export const initUploadDir = () => {
+  const uploadPath = UPLOAD_IMAGE_TEMP_DIR
+  if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true })
+  }
+}
+
+export const uploadImagesUtils = async (req: Request) => {
   const form = formidable({
-    uploadDir: path.resolve('uploads'),
+    uploadDir: UPLOAD_IMAGE_TEMP_DIR,
     keepExtensions: true,
-    maxFields: 1,
-    maxFileSize: 30000 * 1024,
+    maxFiles: 5,
+    maxFileSize: 5000 * 1024,
+    maxTotalFileSize: 25000 * 1024,
     filter: (part) => {
       const isValid = part.name === 'image' && part.mimetype && part.mimetype.startsWith('image/')
-
-      if (!isValid) {
-        form.emit('error', new Error('Invalid'))
-      }
-
       return Boolean(isValid)
     }
   })
 
-  return new Promise((resolve, reject) => {
+  return new Promise<formidable.File[]>((resolve, reject) => {
+    initUploadDir()
     form.on('error', (err) => {
       return reject(err)
     })
@@ -27,7 +32,38 @@ export const handleUploadSingleImage = async (req: Request) => {
       if (err) {
         return reject(err)
       }
-      resolve({ fields, files })
+      resolve(files.image as formidable.File[])
     })
   })
+}
+
+export const uploadVideoUtils = async (req: Request) => {
+  const form = formidable({
+    uploadDir: UPLOAD_IMAGE_TEMP_DIR,
+    keepExtensions: true,
+    maxFiles: 1,
+    maxFileSize: 50 * 1024 * 1024,
+    filter: () => {
+      return true
+    }
+  })
+
+  return new Promise<formidable.File[]>((resolve, reject) => {
+    initUploadDir()
+    form.on('error', (err) => {
+      return reject(err)
+    })
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        return reject(err)
+      }
+      resolve(files.image as formidable.File[])
+    })
+  })
+}
+
+export const getNameFileFromFullName = (fullFilename: string) => {
+  const parts = fullFilename.split('.')
+  parts.pop()
+  return parts.join('')
 }
