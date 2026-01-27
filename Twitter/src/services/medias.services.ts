@@ -2,7 +2,7 @@ import { Request } from 'express'
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
-import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
+import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
 import { MediaType } from '~/constants/enums'
 import { getNameFileFromFullName, uploadImagesUtils, uploadVideoUtils } from '~/utils/file'
 
@@ -27,11 +27,11 @@ class MediasServices {
     const files = await uploadVideoUtils(req)
     const video = files[0]
     const newName = getNameFileFromFullName(video.newFilename || '')
-    const newPath = path.resolve(UPLOAD_IMAGE_DIR, `${newName}.jpeg`)
-    await sharp(video.filepath).jpeg().toFile(newPath)
-    fs.unlinkSync(video.filepath)
+    const ext = path.extname(video.originalFilename || '')
+    const newPath = path.resolve(UPLOAD_VIDEO_DIR, `${newName}${ext}`)
+    fs.renameSync(video.filepath, newPath)
     return {
-      url: `/static/video/${newName}`,
+      url: `/static/video/${newName}${ext}`,
       type: MediaType.VIDEO
     }
   }

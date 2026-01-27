@@ -1,13 +1,14 @@
 import formidable from 'formidable'
 import { Request } from 'express'
 import fs from 'fs'
-import { UPLOAD_IMAGE_TEMP_DIR } from '~/constants/dir'
+import { UPLOAD_IMAGE_TEMP_DIR, UPLOAD_VIDEO_TEMP_DIR } from '~/constants/dir'
 
 export const initUploadDir = () => {
-  const uploadPath = UPLOAD_IMAGE_TEMP_DIR
-  if (!fs.existsSync(uploadPath)) {
-    fs.mkdirSync(uploadPath, { recursive: true })
-  }
+  ;[UPLOAD_IMAGE_TEMP_DIR, UPLOAD_VIDEO_TEMP_DIR].forEach((dir) => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+  })  
 }
 
 export const uploadImagesUtils = async (req: Request) => {
@@ -39,7 +40,7 @@ export const uploadImagesUtils = async (req: Request) => {
 
 export const uploadVideoUtils = async (req: Request) => {
   const form = formidable({
-    uploadDir: UPLOAD_IMAGE_TEMP_DIR,
+    uploadDir: UPLOAD_VIDEO_TEMP_DIR,
     keepExtensions: true,
     maxFiles: 1,
     maxFileSize: 50 * 1024 * 1024,
@@ -57,7 +58,7 @@ export const uploadVideoUtils = async (req: Request) => {
       if (err) {
         return reject(err)
       }
-      resolve(files.image as formidable.File[])
+      resolve(files.video as formidable.File[])
     })
   })
 }

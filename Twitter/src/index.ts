@@ -20,6 +20,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/users', userRouter)
 app.use('/medias', mediasRouter)
 app.use('/static', staticRouter)
+app.use('/uploads', express.static('uploads'))
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(defaultErrorHandler)
 app.listen(PORT, () => {
