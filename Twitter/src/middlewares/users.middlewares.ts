@@ -133,7 +133,7 @@ export const accessTokenValidator = validate(
               token: accessToken,
               privateKey: process.env.JWT_ACCESS_TOKEN_SECRET as string
             }).catch((err) => null)
-            req.decode_authorization = decode_authorization
+            ;(req as Request).decode_authorization = decode_authorization as TokenPayload
             return true
           }
         }
@@ -153,9 +153,7 @@ export const refreshTokenValidator = validate(
         custom: {
           options: async (value, { req }) => {
             const [decode_refresh, refresh_token] = await Promise.all([
-              verifyToken({ token: value, privateKey: process.env.JWT_REFRESH_TOKEN_SECRET as string }).catch(
-                (err) => null
-              ),
+              verifyToken({ token: value, privateKey: process.env.JWT_REFRESH_TOKEN_SECRET as string }),
               databasesService.refreshTokens.findOne({ token: value })
             ])
 

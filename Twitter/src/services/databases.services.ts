@@ -24,6 +24,7 @@ class DatabasesService {
       await this.client.connect()
       // Send a ping to confirm a successful connection
       await this.db.command({ ping: 1 })
+      this.indexUsers()
       console.log('Pinged your deployment. You successfully connected to MongoDB!')
     } catch (e) {
       console.error(e)
@@ -31,6 +32,16 @@ class DatabasesService {
       // Ensures that the client will close when you finish/error
       // await this.client.close();
     }
+  }
+  indexUsers() {
+    this.users.createIndex({ email: 1 }, { unique: true })
+    this.users.createIndex({ username: 1 }, { unique: true })
+  }
+  indexRefreshTokens() {
+    this.refreshTokens.createIndex({ token: 1 }, { unique: true })
+  }
+  indexFollowers() {
+    this.followers.createIndex({ user_id: 1, followed_user_id: 1 }, { unique: true })
   }
   get users(): Collection<User> {
     return this.db.collection('users')
