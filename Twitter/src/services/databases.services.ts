@@ -25,6 +25,8 @@ class DatabasesService {
       // Send a ping to confirm a successful connection
       await this.db.command({ ping: 1 })
       this.indexUsers()
+      this.indexFollowers()
+      this.indexRefreshTokens()
       console.log('Pinged your deployment. You successfully connected to MongoDB!')
     } catch (e) {
       console.error(e)
@@ -34,14 +36,23 @@ class DatabasesService {
     }
   }
   indexUsers() {
-    this.users.createIndex({ email: 1 }, { unique: true })
-    this.users.createIndex({ username: 1 }, { unique: true })
+    const existIndexes = this.users.indexExists(['email_1', 'username_1'])
+    if (!existIndexes) {
+      this.users.createIndex({ email: 1 }, { unique: true })
+      this.users.createIndex({ username: 1 }, { unique: true })
+    }
   }
   indexRefreshTokens() {
-    this.refreshTokens.createIndex({ token: 1 }, { unique: true })
+    const existIndexes = this.refreshTokens.indexExists(['token_1'])
+    if (!existIndexes) {
+      this.refreshTokens.createIndex({ token: 1 }, { unique: true })
+    }
   }
   indexFollowers() {
-    this.followers.createIndex({ user_id: 1, followed_user_id: 1 }, { unique: true })
+    const existIndexes = this.followers.indexExists(['user_id_1_followed_user_id_1'])
+    if (!existIndexes) {
+      this.followers.createIndex({ user_id: 1, followed_user_id: 1 }, { unique: true })
+    }
   }
   get users(): Collection<User> {
     return this.db.collection('users')

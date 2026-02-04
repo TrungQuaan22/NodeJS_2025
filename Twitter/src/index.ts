@@ -5,6 +5,7 @@ import defaultErrorHandler from './middlewares/errors.middleware'
 import mediasRouter from './routes/medias.routes'
 import { config } from 'dotenv'
 import staticRouter from './routes/static.routes'
+import tweetRouter from './routes/tweet.routes'
 config()
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/users', userRouter)
 app.use('/medias', mediasRouter)
 app.use('/static', staticRouter)
+app.use('/tweets', tweetRouter)
 app.use('/uploads', express.static('uploads'))
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(defaultErrorHandler)
