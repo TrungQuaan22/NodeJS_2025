@@ -132,7 +132,9 @@ export const accessTokenValidator = validate(
             const decode_authorization = await verifyToken({
               token: accessToken,
               privateKey: process.env.JWT_ACCESS_TOKEN_SECRET as string
-            }).catch((err) => null)
+            }).catch((err) => {
+              throw err
+            })
             ;(req as Request).decode_authorization = decode_authorization as TokenPayload
             return true
           }

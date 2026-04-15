@@ -1,0 +1,235 @@
+openapi: 3.0.0
+info:
+  title: Twitter
+  version: 1.0.0
+  description: >-
+    # 🚀 Get started here
+servers:
+  - url: http://localhost:4000
+    description: Local server
+paths:
+  /users/login:
+    post:
+      summary: Login
+      responses:  
+        '200':  
+          description: Đăng nhập thành công  
+          content:
+            application/json:  
+              schema:  
+                type: object  
+                properties:
+                  message:  
+                    type: string  
+                    description: Thông báo đăng nhập thành công
+                  result:  
+                    type: object  
+                    properties:  
+                      access_token:  
+                        type: string  
+                        description: JWT access token  
+                      refresh_token:  
+                        type: string  
+                        description: JWT refresh token  
+              example:  
+                access_token: >-
+                  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjg5N2JkOWRlYzY1MWEyYTRhZGE1MWI3IiwidG9rZW5fdHlwZSI6MCwiaWF0IjoxNzYxMjI3NTk5LCJleHAiOjE3NjEyMjg0OTl9.zXKCaY5yTZ5EpSSkibedIeqgeFkKs7guv64IBF2Zm-c
+                refresh_token: >-
+                  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjg5N2JkOWRlYzY1MWEyYTRhZGE1MWI3IiwidG9rZW5fdHlwZSI6MSwiaWF0IjoxNzYxMzA4MDA1LCJleHAiOjE3NjE5MTI4MDV9.bDoa8V0M6QyTSRZh6_EZbvw-aQBv0JIHBovOLuclyGs
+      tags:
+        - Authentication
+      description: >-
+        This is a POST request, submitting data to an API via the request body.
+        This request submits JSON data, and the data is reflected in the
+        response.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+            example:
+              email: giangtrungquan05@gmail.com
+              password: TrungQuan21@
+  /users/register:
+    post:
+      summary: Register
+      responses: {}
+      tags:
+        - Authentication
+      description: >-
+        This is a POST request, submitting data to an API via the request body.
+        This request submits JSON data, and the data is reflected in the
+        response.
+
+
+        A successful POST request typically returns a `200 OK` or `201 Created`
+        response code.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                confirm_password:
+                  type: string
+                name:
+                  type: string
+            example:
+              email: giangtrungquan05@gmail.com
+              password: TrungQuan21@
+              confirm_password: TrungQuan21@
+              name: Quan
+  /users/logout:
+    post:
+      summary: Logout
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          deprecated: false
+          schema: {}
+          example: >-
+            Bearer
+            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjhmNzdlNDAyNDdhZjQxZTRiYzk3ZGE2IiwidG9rZW5fdHlwZSI6MCwiaWF0IjoxNzYxMjI3NTk5LCJleHAiOjE3NjEyMjg0OTl9.zXKCaY5yTZ5EpSSkibedIeqgeFkKs7guv64IBF2Zm-c
+      responses: {}
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      description: >-
+        This is a PUT request and it is used to overwrite an existing piece of
+        data. For instance, after you create an entity with a POST request, you
+        may want to modify that later. You can do that using a PUT request. You
+        typically identify the entity being updated by including an identifier
+        in the URL (eg. `id=1`).
+
+
+        A successful PUT request typically returns a `200 OK`, `201 Created`, or
+        `204 No Content` response code.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+            example:
+              refresh_token: >-
+                eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjhmNzdlNDAyNDdhZjQxZTRiYzk3ZGE2IiwidG9rZW5fdHlwZSI6MSwiaWF0IjoxNzYxMzA4MDA1LCJleHAiOjE3NjE5MTI4MDV9.bDoa8V0M6QyTSRZh6_EZbvw-aQBv0JIHBovOLuclyGs
+  /users/refresh-token:
+    post:
+      summary: Refresh_token
+      responses: {}
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      description: >-
+        This is a DELETE request, and it is used to delete data that was
+        previously created via a POST request. You typically identify the entity
+        being updated by including an identifier in the URL (eg. `id=1`).
+
+
+        A successful DELETE request typically returns a `200 OK`, `202
+        Accepted`, or `204 No Content` response code.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+            example:
+              refresh_token: >-
+                eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjk3OWJkOWRlYzY1MWEyYTRhZGE1MWI3IiwidG9rZW5fdHlwZSI6MSwidmVyaWZ5IjoxLCJpYXQiOjE3Njk1ODg4NTYsImV4cCI6MTc3MDE5MzY1Nn0.WRNYzD-BdOh__RjfjeU1GwfHBlZXls2C7wd4xGT4wrE
+  /verify-email:
+    post:
+      summary: Verify Email
+      responses: {}
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+  /forgot-password:
+    post:
+      summary: Forgot Password
+      responses: {}
+      tags:
+        - Authentication
+  /users/reset-password:
+    post:
+      summary: Reset Password
+      responses: {}
+      tags:
+        - Authentication
+  /:
+    get:
+      summary: GET ME
+      responses: {}
+      tags:
+        - Authentication
+  /upload-image:
+    post:
+      summary: upload-1-image
+      responses: {}
+      tags:
+        - Media
+  /medias/upload-video-hls:
+    post:
+      summary: Upload Video HLS
+      responses: {}
+      tags:
+        - Media
+  /static/video-hls//master.m3u8:
+    get:
+      summary: GET M3U8
+      responses: {}
+      tags:
+        - Media
+  /tweets/create:
+    post:
+      summary: Create
+      responses: {}
+      tags:
+        - Tweet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example: "{\r\n        \"type\": \"tweet\",\r\n        \"audience\": \"\",\r\n        \"content\": \"\",\r\n        \"hashtags\": [],\r\n        \"mentions\":\"\",\r\n        \"user_id\": \"\",\r\n        \"medias\": \r\n}"
+  /tweets/bookmark:
+    post:
+      summary: bookmark
+      responses: {}
+      tags:
+        - Tweet
+  /tweets/69afeff7f84423556e017681:
+    get:
+      summary: getTweet
+      responses: {}
+      tags:
+        - Tweet
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+security:
+  - BearerAuth: []

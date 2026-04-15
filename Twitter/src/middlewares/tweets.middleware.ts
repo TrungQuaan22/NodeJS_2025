@@ -3,6 +3,7 @@ import { checkSchema } from 'express-validator'
 import { isEmpty } from 'lodash'
 import { ObjectId } from 'mongodb'
 import { MediaType, TweetAudience, TweetType } from '~/constants/enums'
+import databasesService from '~/services/databases.services'
 import validate from '~/utils/validate'
 
 export const createTweetVaidator = validate(
@@ -21,7 +22,7 @@ export const createTweetVaidator = validate(
     },
     parent_id: {
       custom: {
-        options: (value, { req }) => {
+        options: async (value, { req }) => {
           const type = req.body.type
           if ([TweetType.COMMENT, TweetType.QUOTE_TWEET, TweetType.RETWEET].includes(type) && !value) {
             throw new Error('Parent ID is required for comment, quote, and retweet')
@@ -29,6 +30,7 @@ export const createTweetVaidator = validate(
           if (type === TweetType.TWEET && value) {
             throw new Error('Parent ID must be null for original tweet')
           }
+          await checkTweetIdExistence(value)
           return true
         }
       }
@@ -53,6 +55,7 @@ export const createTweetVaidator = validate(
           if ([TweetType.RETWEET].includes(type) && !isEmpty(value)) {
             throw new Error('Content must be empty for retweet')
           }
+          return true
         }
       }
     },
@@ -93,8 +96,31 @@ export const createTweetVaidator = validate(
           ) {
             throw new Error('Each media must have a valid url and type')
           }
+          return true
         }
       }
     }
   })
 )
+export const tweetIdValidator = validate(
+  checkSchema({
+    tweet_id: {
+      isMongoId: {
+        errorMessage: 'Invalid tweet ID'
+      },
+      custom: {
+        options: async (value, { req }) => {
+          req.tweet = await checkTweetIdExistence(value)
+        }
+      }
+    }
+  }, ['params', 'body'])
+)
+
+const checkTweetIdExistence = async (tweet_id: string) => {
+  const tweet = await databasesService.tweets.findOne({ _id: new ObjectId(tweet_id) })
+          if (!tweet) {
+            throw new Error('Tweet does not exist')
+          }
+          return tweet
+}

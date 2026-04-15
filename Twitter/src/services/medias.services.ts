@@ -1,11 +1,14 @@
+import { config } from 'dotenv'
 import { Request } from 'express'
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
-import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
+import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
 import { MediaType } from '~/constants/enums'
 import { getNameFileFromFullName, uploadImagesUtils, uploadVideoUtils } from '~/utils/file'
+import { encodeHLSWithMultipleVideoStreams } from '~/utils/video'
 
+config()
 class MediasServices {
   async handleUploadImages(req: Request) {
     const files = await uploadImagesUtils(req)
@@ -16,7 +19,7 @@ class MediasServices {
         await sharp(file.filepath).jpeg().toFile(newPath)
         fs.unlinkSync(file.filepath)
         return {
-          url: `/static/image/${newName}.jpeg`,
+          url: `${process.env.VITE_BASE_URL}/static/image-self/${newName}.jpeg`,
           type: MediaType.IMAGE
         }
       })
@@ -26,12 +29,20 @@ class MediasServices {
   async handleUploadVideo(req: Request) {
     const files = await uploadVideoUtils(req)
     const video = files[0]
-    const newName = getNameFileFromFullName(video.newFilename || '')
-    const ext = path.extname(video.originalFilename || '')
-    const newPath = path.resolve(UPLOAD_VIDEO_DIR, `${newName}${ext}`)
-    fs.renameSync(video.filepath, newPath)
     return {
-      url: `/static/video/${newName}${ext}`,
+      url: `${process.env.VITE_BASE_URL}/static/video/${video.newFilename}`,
+      type: MediaType.VIDEO
+    }
+  }
+
+  async handleUploadVideoHLS(req: Request) {
+    const files = await uploadVideoUtils(req)
+    const video = files[0]
+    await encodeHLSWithMultipleVideoStreams(video.filepath)
+    const newName = getNameFileFromFullName(video.newFilename || '')
+    fs.unlinkSync(video.filepath)
+    return {
+      url: `${process.env.VITE_BASE_URL}/static/video-hls/${newName}/master.m3u8`,
       type: MediaType.VIDEO
     }
   }

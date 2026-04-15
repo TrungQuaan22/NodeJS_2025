@@ -3,6 +3,10 @@ import dotenv from 'dotenv'
 import { User } from '~/models/schemas/users.schema'
 import { RefreshToken } from '~/models/schemas/refreshToken.schema'
 import { Follower } from '~/models/schemas/followers.schema'
+import Tweet from '~/models/schemas/Tweet.shema'
+import Hashtag from '~/models/schemas/hashtags.schemas'
+import Bookmark from '~/models/schemas/bookmarks.schema'
+import Like from '~/models/schemas/likes.schema'
 dotenv.config()
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@twitter-dev.b5uscoc.mongodb.net/?retryWrites=true&w=majority&appName=twitter-dev`
 class DatabasesService {
@@ -62,6 +66,18 @@ class DatabasesService {
   }
   get followers(): Collection<Follower> {
     return this.db.collection('followers')
+  }
+  get tweets(): Collection<Tweet> {
+    return this.db.collection('tweets')
+  }
+  get hashtags(): Collection<Hashtag> {
+    return this.db.collection('hashtags')
+  }
+  get bookmarks(): Collection<Bookmark> {
+    return this.db.collection('bookmarks')
+  }
+  get likes(): Collection<Like> {
+    return this.db.collection('likes')
   }
 }
 const databasesService = new DatabasesService()

@@ -15,6 +15,15 @@ export const getImageController = async (req: Request, res: Response) => {
   const { name } = req.params
   return res.sendFile(path.resolve(UPLOAD_IMAGE_DIR, name))
 }
+export const getVideoHLSController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  return res.sendFile(path.resolve(UPLOAD_VIDEO_DIR, id, 'master.m3u8'))
+}
+export const getVideoHLSSegmentController = async (req: Request, res: Response) => {
+  const { id, ver, segment } = req.params
+  //segment có dạng: segment1.ts, segment2.ts, ...
+  return res.sendFile(path.resolve(UPLOAD_VIDEO_DIR, id, ver, segment))
+}
 export const getVideoController = async (req: Request, res: Response) => {
   const range = req.headers.range
   if (!range) {
@@ -47,6 +56,13 @@ export const getVideoController = async (req: Request, res: Response) => {
 }
 export const uploadVideoController = async (req: Request, res: Response) => {
   const result = await mediasServices.handleUploadVideo(req)
+  return res.status(200).json({
+    result
+  })
+}
+
+export const uploadVideoHLSController = async (req: Request, res: Response) => {
+  const result = await mediasServices.handleUploadVideoHLS(req)
   return res.status(200).json({
     result
   })
