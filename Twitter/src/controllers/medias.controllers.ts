@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import fs from 'fs'
-import mime from 'mime'
+import mime from 'mime-types'
 import path from 'path'
 import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
 import { mediasServices } from '~/services/medias.services'
@@ -42,7 +42,7 @@ export const getVideoController = async (req: Request, res: Response) => {
   //Dung lượng thực tế cho mỗi đoạn video stream
   //Vẫn là vì content length có thể = videoSize hoặc nhỏ hơn do đoạn cuối
   const contentLength = end - start + 1
-  const contentType = mime.getType(videoPath) || 'video/mp4'
+  const contentType = mime.lookup(videoPath) || 'video/mp4'
   const headers = {
     'Content-Range': `bytes ${start}-${end}/${videoSize}`,
     'Content-Length': contentLength,
